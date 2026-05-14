@@ -167,6 +167,49 @@ const AVAILABLE_MODELS = [
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
+  // FREETHEAI (Новый бесплатный провайдер)
+  {
+    id: 'cat/claude-4-6-sonnet',
+    displayName: 'Claude 4.6 Sonnet',
+    requiredKey: 'FREETHEAI_API_KEY',
+    provider: 'freetheai',
+  },
+  {
+    id: 'rev/claude-sonnet-4.5',
+    displayName: 'Claude 4.5 Sonnet',
+    requiredKey: 'FREETHEAI_API_KEY',
+    provider: 'freetheai',
+  },
+  {
+    id: 'bbg/deepseek-ai/DeepSeek-V4-Pro',
+    displayName: 'DeepSeek V4 Pro',
+    requiredKey: 'FREETHEAI_API_KEY',
+    provider: 'freetheai',
+  },
+  {
+    id: 'bbg/deepseek-ai/DeepSeek-V4-Flash',
+    displayName: 'DeepSeek V4 Flash',
+    requiredKey: 'FREETHEAI_API_KEY',
+    provider: 'freetheai',
+  },
+  {
+    id: 'bbl/gemini-3.0-flash',
+    displayName: 'Gemini 3.0 Flash',
+    requiredKey: 'FREETHEAI_API_KEY',
+    provider: 'freetheai',
+  },
+  {
+    id: 'bbl/gpt-5.4-mini',
+    displayName: 'GPT 5.4 Mini',
+    requiredKey: 'FREETHEAI_API_KEY',
+    provider: 'freetheai',
+  },
+  {
+    id: 'bbg/zai-org/GLM-5.1',
+    displayName: 'GLM 5.1',
+    requiredKey: 'FREETHEAI_API_KEY',
+    provider: 'freetheai',
+  },
 ]
 
 // Endpoint 1: Отдаем фронтенду список доступных моделей
@@ -208,7 +251,10 @@ app.post('/api/chat', async (req, res) => {
     baseURL = 'https://api.deepseek.com/v1'
   } else if (targetModel.provider === 'openrouter' || targetModel.provider === 'openrouter_auto') {
     baseURL = 'https://openrouter.ai/api/v1'
+  } else if (targetModel.provider === 'freetheai') {
+    baseURL = 'https://api.freetheai.xyz/v1'
   }
+
   // Динамически создаем инстанс OpenAI
   const openai = new OpenAI({ apiKey, baseURL })
 
@@ -221,6 +267,15 @@ app.post('/api/chat', async (req, res) => {
     res.json({ reply: response.choices[0].message.content })
   } catch (error) {
     console.error(`Ошибка API (${targetModel.provider}):`, error)
+
+    // Умный перехват ошибки Discord Check-in от FreeTheAI
+    if (error.status === 403 && error.error?.type === 'daily_checkin_required') {
+      return res.status(403).json({
+        error:
+          'Требуется активация ключа FreeTheAI. Зайдите в их Discord и отправьте команду /checkin',
+      })
+    }
+    // Обработка остальных ошибок
     res.status(500).json({ error: error.message || 'Ошибка ответа ИИ' })
   }
 })

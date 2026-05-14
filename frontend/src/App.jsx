@@ -128,85 +128,176 @@ function App() {
     }
   };
 
-  // UI компонент для выбора модели (xAI style)
-// UI компонент для выбора модели (Сгруппированный xAI style)
+// UI компонент для выбора модели (Кастомный Dropdown с пасхалкой на тройной клик)
   const ModelSelector = () => {
-    // Группируем модели для красивого отображения
+    const [isOpen, setIsOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false); // Состояние для тройного клика
+
+    // Закрытие при клике вне элемента
+    useEffect(() => {
+      const closeMenu = () => {
+        setIsOpen(false);
+        setTimeout(() => setIsExpanded(false), 200); // Сбрасываем высоту с небольшой задержкой для плавности
+      };
+      if (isOpen) window.addEventListener('click', closeMenu);
+      return () => window.removeEventListener('click', closeMenu);
+    }, [isOpen]);
+
     const autoModel = availableModels.find(m => m.provider === 'openrouter_auto');
     const freeModels = availableModels.filter(m => m.provider === 'openrouter');
     const premiumModels = availableModels.filter(m => m.provider === 'openai' || m.provider === 'deepseek');
 
+    const currentModelName = availableModels.find(m => m.id === selectedModel)?.displayName || t.noModels;
+
+    // Обработчик кликов (одиночный = открыть/закрыть, тройной = расширить)
+    const handleToggle = (e) => {
+      if (e.detail === 3) {
+        setIsExpanded(true);
+        setIsOpen(true);
+      } else if (e.detail === 1) {
+        // Срабатывает только на первый клик, чтобы не мешать двойным/тройным кликам
+        if (isOpen) {
+          setIsOpen(false);
+          setTimeout(() => setIsExpanded(false), 200);
+        } else {
+          setIsOpen(true);
+        }
+      }
+    };
+
+    // Функция выбора модели
+    const handleSelect = (id) => {
+      setSelectedModel(id);
+      setIsOpen(false);
+      setTimeout(() => setIsExpanded(false), 200);
+    };
+
     return (
-      <div className="relative inline-block">
-        <select
-          value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value)}
-          className="appearance-none bg-transparent border border-white/25 text-white font-mono text-xs tracking-widest uppercase py-2 pl-4 pr-10 rounded-full hover:bg-white/10 focus:outline-none focus:border-white/50 transition-colors cursor-pointer max-w-[250px] sm:max-w-md truncate"
+      <div
+        className="relative inline-block w-[60%] sm:w-auto max-w-[200px] sm:max-w-md z-50"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={handleToggle}
+          className="w-full flex items-center justify-between bg-[#0a0a0a] border border-white/25 text-white font-mono text-[10px] sm:text-xs tracking-widest uppercase py-2 px-3 sm:px-4 rounded-full hover:bg-white/10 focus:outline-none focus:border-white/50 transition-colors"
           disabled={availableModels.length === 0}
+          title="Triple click to expand fully"
         >
-          {availableModels.length === 0 ? (
-            <option value="" className="bg-[#191919]">{t.noModels}</option>
-          ) : (
-            <>
-              {/* Авто-маршрутизатор (всегда сверху) */}
+          <span className="truncate mr-2">{currentModelName}</span>
+          <ChevronDown size={14} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {isOpen && availableModels.length > 0 && (
+          <div className="absolute top-full left-0 mt-2 w-max min-w-[100%] max-w-[85vw] sm:max-w-[300px] bg-[#191919] border border-[#212327] rounded-xl shadow-2xl overflow-hidden flex flex-col">
+
+            {/* Динамическая высота: обычная или на весь экран */}
+            <div className={`overflow-y-auto [scrollbar-width:thin] overscroll-contain py-2 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[85vh] sm:max-h-[80vh]' : 'max-h-[40vh] sm:max-h-60'}`}>
+
+              {/* Авто-маршрутизатор */}
               {autoModel && (
-                <option value={autoModel.id} className="bg-[#191919] text-white font-bold">
+                <div
+                  onClick={() => handleSelect(autoModel.id)}
+                  className={`px-4 py-2 cursor-pointer font-bold text-xs sm:text-sm hover:bg-[#212327] ${selectedModel === autoModel.id ? 'bg-[#212327] text-white' : 'text-white'}`}
+                >
                   {autoModel.displayName}
-                </option>
+                </div>
               )}
 
               {/* Группа бесплатных моделей */}
               {freeModels.length > 0 && (
-                <optgroup label="── Free OpenRouter Models ──" className="bg-[#0a0a0a] text-[#7d8187] font-sans">
+                <>
+                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">── Free Models ──</div>
                   {freeModels.map(m => (
-                    <option key={m.id} value={m.id} className="bg-[#191919] text-white font-mono">
+                    <div
+                      key={m.id}
+                      onClick={() => handleSelect(m.id)}
+                      className={`px-4 py-2 cursor-pointer font-mono text-xs hover:bg-[#212327] ${selectedModel === m.id ? 'bg-[#212327] text-white' : 'text-[#dadbdf]'}`}
+                    >
                       {m.displayName}
-                    </option>
+                    </div>
                   ))}
-                </optgroup>
+                </>
               )}
 
-              {/* Группа платных моделей (если ключи добавлены в .env) */}
+              {/* Группа платных моделей */}
               {premiumModels.length > 0 && (
-                <optgroup label="── Premium / Paid Models ──" className="bg-[#0a0a0a] text-[#7d8187] font-sans">
+                <>
+                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">── Premium Models ──</div>
                   {premiumModels.map(m => (
-                    <option key={m.id} value={m.id} className="bg-[#191919] text-[#ff7a17] font-mono">
+                    <div
+                      key={m.id}
+                      onClick={() => handleSelect(m.id)}
+                      className={`px-4 py-2 cursor-pointer font-mono text-xs hover:bg-[#212327] ${selectedModel === m.id ? 'bg-[#212327] text-[#ff7a17]' : 'text-[#ff7a17]/80'}`}
+                    >
                       {m.displayName}
-                    </option>
+                    </div>
                   ))}
-                </optgroup>
+                </>
               )}
-            </>
-          )}
-        </select>
-        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/70" />
+            </div>
+          </div>
+        )}
       </div>
     );
   };
   // VIEW 1: Стартовый экран
-
-  if (!isChatStarted) {
+if (!isChatStarted) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-6 sm:p-12 font-sans transition-colors duration-500">
-        <div className="absolute top-6 left-6 right-6 flex justify-between items-center">
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 font-sans transition-colors duration-500 overflow-x-hidden">
+
+        {/* Адаптивная шапка */}
+        <div className="absolute top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-6 flex justify-between items-start sm:items-center gap-2">
           <ModelSelector />
-          <button onClick={toggleLang} className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase">
-            <Globe size={14} /> {t.langSwitch}
+          <button onClick={toggleLang} className="flex items-center justify-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-[10px] sm:text-xs tracking-widest uppercase shrink-0">
+            <Globe size={14} /> <span className="hidden sm:inline">{t.langSwitch}</span><span className="sm:hidden">{lang === 'en' ? 'RU' : 'EN'}</span>
           </button>
         </div>
 
-        <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center">
-          <h1 className="text-4xl sm:text-5xl font-normal mb-2 tracking-tight text-[#ffffff]">{t.greeting}</h1>
-          <h2 className="text-5xl sm:text-7xl font-normal mb-6 tracking-tighter text-[#ffffff]">{t.question}</h2>
-          <p className="text-[#dadbdf] text-lg sm:text-xl font-normal mb-12 max-w-xl">{t.subtitle}</p>
+        {/* Адаптивные заголовки */}
+        <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center mt-12 sm:mt-0">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal mb-2 tracking-tight text-[#ffffff]">
+            {t.greeting}
+          </h1>
+          <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal mb-4 sm:mb-6 tracking-tighter text-[#ffffff] leading-tight">
+            {t.question}
+          </h2>
+          <p className="text-[#dadbdf] text-sm sm:text-lg md:text-xl font-normal mb-8 sm:mb-12 max-w-[90%] sm:max-w-xl">
+            {t.subtitle}
+          </p>
 
-          <form onSubmit={handleSubmit} className="w-full bg-[#191919] border border-[#212327] rounded-full p-2 flex items-center gap-2 focus-within:border-white/50 transition-colors">
-            <button type="button" onMouseDown={startRecording} onMouseUp={stopRecording} onTouchStart={startRecording} onTouchEnd={stopRecording} className={`p-3 rounded-full transition-colors ${isRecording ? 'bg-[#ff7a17] text-white' : 'text-[#dadbdf] hover:bg-[#212327]'}`}>
-              <Mic size={24} />
+<form
+            onSubmit={handleSubmit}
+            className="w-full bg-[#191919] border border-[#212327] rounded-full p-1 sm:p-2 flex items-center gap-1 sm:gap-2 focus-within:border-white/50 transition-colors"
+          >
+            <button
+              type="button"
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              className={`p-2 sm:p-3 rounded-full transition-colors shrink-0 ${isRecording ? 'bg-[#ff7a17] text-white' : 'text-[#dadbdf] hover:bg-[#212327]'}`}
+            >
+              {/* Убрали size={24}, добавили классы ширины и высоты */}
+              <Mic className="w-4 h-4 sm:w-6 sm:h-6" />
             </button>
-            <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder={t.placeholder} className="flex-1 bg-transparent text-white text-lg placeholder-[#7d8187] focus:outline-none px-2 font-normal" />
-            <button type="submit" disabled={!input.trim() || !selectedModel} className="bg-white text-[#0a0a0a] p-3 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-              <ArrowRight size={24} />
+
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t.placeholder}
+              // Уменьшили текст для мобилок (text-sm) и добавили min-w-0, чтобы инпут не распирал форму
+              className="flex-1 min-w-0 bg-transparent text-white text-sm sm:text-lg placeholder-[#7d8187] focus:outline-none px-1 sm:px-2 font-normal"
+            />
+
+            <button
+              type="submit"
+              disabled={!input.trim() || !selectedModel}
+              className="bg-white text-[#0a0a0a] p-2 sm:p-3 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+            >
+              {/* Убрали size={24}, добавили классы ширины и высоты */}
+              <ArrowRight className="w-4 h-4 sm:w-6 sm:h-6" />
             </button>
           </form>
           {error && <p className="text-[#ff7a17] text-sm mt-4 font-mono uppercase tracking-wider">{error}</p>}

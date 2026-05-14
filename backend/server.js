@@ -43,7 +43,7 @@ const AVAILABLE_MODELS = [
   // БЕСПЛАТНЫЕ МОДЕЛИ OPENROUTER (Из вашего списка)
   {
     id: 'openrouter/free',
-    displayName: '✨ Auto-Router (Лучшая бесплатная)',
+    displayName: '✨ Auto-Router (the best free)',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter_auto',
   },

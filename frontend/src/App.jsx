@@ -129,28 +129,60 @@ function App() {
   };
 
   // UI компонент для выбора модели (xAI style)
-  const ModelSelector = () => (
-    <div className="relative inline-block">
-      <select
-        value={selectedModel}
-        onChange={(e) => setSelectedModel(e.target.value)}
-        className="appearance-none bg-transparent border border-white/25 text-white font-mono text-xs tracking-widest uppercase py-2 pl-4 pr-10 rounded-full hover:bg-white/10 focus:outline-none focus:border-white/50 transition-colors cursor-pointer"
-        disabled={availableModels.length === 0}
-      >
-        {availableModels.length === 0 ? (
-          <option value="" className="bg-[#191919]">{t.noModels}</option>
-        ) : (
-          availableModels.map(m => (
-            <option key={m.id} value={m.id} className="bg-[#191919] text-white">
-              {m.displayName}
-            </option>
-          ))
-        )}
-      </select>
-      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/70" />
-    </div>
-  );
+// UI компонент для выбора модели (Сгруппированный xAI style)
+  const ModelSelector = () => {
+    // Группируем модели для красивого отображения
+    const autoModel = availableModels.find(m => m.provider === 'openrouter_auto');
+    const freeModels = availableModels.filter(m => m.provider === 'openrouter');
+    const premiumModels = availableModels.filter(m => m.provider === 'openai' || m.provider === 'deepseek');
 
+    return (
+      <div className="relative inline-block">
+        <select
+          value={selectedModel}
+          onChange={(e) => setSelectedModel(e.target.value)}
+          className="appearance-none bg-transparent border border-white/25 text-white font-mono text-xs tracking-widest uppercase py-2 pl-4 pr-10 rounded-full hover:bg-white/10 focus:outline-none focus:border-white/50 transition-colors cursor-pointer max-w-[250px] sm:max-w-md truncate"
+          disabled={availableModels.length === 0}
+        >
+          {availableModels.length === 0 ? (
+            <option value="" className="bg-[#191919]">{t.noModels}</option>
+          ) : (
+            <>
+              {/* Авто-маршрутизатор (всегда сверху) */}
+              {autoModel && (
+                <option value={autoModel.id} className="bg-[#191919] text-white font-bold">
+                  {autoModel.displayName}
+                </option>
+              )}
+
+              {/* Группа бесплатных моделей */}
+              {freeModels.length > 0 && (
+                <optgroup label="── Free OpenRouter Models ──" className="bg-[#0a0a0a] text-[#7d8187] font-sans">
+                  {freeModels.map(m => (
+                    <option key={m.id} value={m.id} className="bg-[#191919] text-white font-mono">
+                      {m.displayName}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+
+              {/* Группа платных моделей (если ключи добавлены в .env) */}
+              {premiumModels.length > 0 && (
+                <optgroup label="── Premium / Paid Models ──" className="bg-[#0a0a0a] text-[#7d8187] font-sans">
+                  {premiumModels.map(m => (
+                    <option key={m.id} value={m.id} className="bg-[#191919] text-[#ff7a17] font-mono">
+                      {m.displayName}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </>
+          )}
+        </select>
+        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/70" />
+      </div>
+    );
+  };
   // VIEW 1: Стартовый экран
 
   if (!isChatStarted) {

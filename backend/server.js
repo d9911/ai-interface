@@ -11,7 +11,7 @@ app.use(express.json())
 
 // Конфигурация доступных моделей (Динамически фильтруется по .env) 2026.05.14 https://openrouter.ai/models?q=free
 const AVAILABLE_MODELS = [
-  // ПЛАТНЫЕ МОДЕЛИ OPENAI (нужен OPENAI_API_KEY)
+  // ПЛАТНЫЕ МОДЕЛИ OPENAI
   { id: 'gpt-4o', displayName: 'ChatGPT 4o', requiredKey: 'OPENAI_API_KEY', provider: 'openai' },
   {
     id: 'gpt-4o-mini',
@@ -26,7 +26,7 @@ const AVAILABLE_MODELS = [
     provider: 'openai',
   },
 
-  // ПЛАТНЫЕ МОДЕЛИ DEEPSEEK (нужен DEEPSEEK_API_KEY)
+  // ПЛАТНЫЕ МОДЕЛИ DEEPSEEK
   {
     id: 'deepseek-chat',
     displayName: 'DeepSeek V3 (Chat)',
@@ -39,53 +39,131 @@ const AVAILABLE_MODELS = [
     requiredKey: 'DEEPSEEK_API_KEY',
     provider: 'deepseek',
   },
-  // 8 БЕСПЛАТНЫХ МОДЕЛЕЙ OPENROUTER ИЗ ВАШЕГО СПИСКА (нужен OPENROUTER_API_KEY)
+
+  // БЕСПЛАТНЫЕ МОДЕЛИ OPENROUTER (Из вашего списка)
   {
-    id: 'meta-llama/llama-3.3-70b-instruct:free',
-    displayName: 'Meta Llama 3.3 70B (Free)',
+    id: 'openrouter/free',
+    displayName: '✨ Auto-Router (Лучшая бесплатная)',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter_auto',
+  },
+  {
+    id: 'nvidia/nemotron-3-super:free',
+    displayName: 'NVIDIA: Nemotron 3 Super',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
   {
-    id: 'deepseek/deepseek-v4-flash:free',
-    displayName: 'DeepSeek V4 Flash (Free)',
+    id: 'inclusionai/ring-2.6-1t:free',
+    displayName: 'inclusionAI: Ring-2.6-1T',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'poolside/laguna-m.1:free',
+    displayName: 'Poolside: Laguna M.1',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'openai/gpt-oss-120b:free',
+    displayName: 'OpenAI: gpt-oss-120b',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'z.ai/glm-4.5-air:free',
+    displayName: 'Z.ai: GLM 4.5 Air',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'minimax/minimax-m2.5:free',
+    displayName: 'MiniMax: MiniMax M2.5',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'nvidia/nemotron-3-nano-30b-a3b:free',
+    displayName: 'NVIDIA: Nemotron 3 Nano 30B',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'openai/gpt-oss-20b:free',
+    displayName: 'OpenAI: gpt-oss-20b',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'baidu/qianfan-cobuddy:free',
+    displayName: 'Baidu Qianfan: CoBuddy',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
   {
     id: 'google/gemma-4-31b-it:free',
-    displayName: 'Google Gemma 4 31B (Free)',
+    displayName: 'Google: Gemma 4 31B',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'nvidia/nemotron-nano-12b-2-vl:free',
+    displayName: 'NVIDIA: Nemotron Nano 12B 2 VL',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'arcee-ai/trinity-large-thinking:free',
+    displayName: 'Arcee AI: Trinity Large Thinking',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'deepseek/deepseek-v4-flash:free',
+    displayName: 'DeepSeek: DeepSeek V4 Flash',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'google/gemma-4-26b-a4b:free',
+    displayName: 'Google: Gemma 4 26B A4B',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
   {
     id: 'qwen/qwen3-coder-480b-a35b-instruct:free',
-    displayName: 'Qwen3 Coder 480B (Free)',
+    displayName: 'Qwen: Qwen3 Coder 480B',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
   {
-    id: 'nousresearch/hermes-3-405b-instruct:free',
-    displayName: 'Nous Hermes 3 405B (Free)',
+    id: 'qwen/qwen3-next-80b-a3b-instruct:free',
+    displayName: 'Qwen: Qwen3 Next 80B',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
   {
-    id: 'nvidia/nemotron-nano-9b-v2:free',
-    displayName: 'NVIDIA Nemotron Nano (Free)',
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    displayName: 'Meta: Llama 3.3 70B Instruct',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
   {
     id: 'liquid/lfm-2.5-1.2b-thinking:free',
-    displayName: 'Liquid LFM 2.5 Thinking (Free)',
+    displayName: 'LiquidAI: LFM 2.5 Thinking',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
-  // Автоматический роутер OpenRouter, который сам выбирает лучшую из доступных бесплатных моделей
   {
-    id: 'openrouter/free',
-    displayName: 'Auto-Router (Best Free)',
+    id: 'nousresearch/hermes-3-405b-instruct:free',
+    displayName: 'Nous: Hermes 3 405B',
+    requiredKey: 'OPENROUTER_API_KEY',
+    provider: 'openrouter',
+  },
+  {
+    id: 'meta-llama/llama-3.2-3b-instruct:free',
+    displayName: 'Meta: Llama 3.2 3B',
     requiredKey: 'OPENROUTER_API_KEY',
     provider: 'openrouter',
   },
@@ -93,13 +171,13 @@ const AVAILABLE_MODELS = [
 
 // Endpoint 1: Отдаем фронтенду список доступных моделей
 app.get('/api/models', (req, res) => {
-  // Фильтруем модели: оставляем только те, для которых в .env есть ключ
   const activeModels = AVAILABLE_MODELS.filter((model) => process.env[model.requiredKey])
 
-  // Отдаем на фронт только безопасные данные (без имен ключей)
+  // Теперь мы отдаем еще и поле provider, чтобы фронтенд мог сгруппировать список
   const safeModels = activeModels.map((m) => ({
     id: m.id,
     displayName: m.displayName,
+    provider: m.provider,
   }))
 
   res.json(safeModels)
@@ -127,8 +205,8 @@ app.post('/api/chat', async (req, res) => {
   // Определяем Base URL в зависимости от провайдера
   let baseURL = undefined // По умолчанию для OpenAI
   if (targetModel.provider === 'deepseek') {
-    baseURL = 'https://api.deepseek.com/v1' // Или /anthropic, смотря какой endpoint используете
-  } else if (targetModel.provider === 'openrouter') {
+    baseURL = 'https://api.deepseek.com/v1'
+  } else if (targetModel.provider === 'openrouter' || targetModel.provider === 'openrouter_auto') {
     baseURL = 'https://openrouter.ai/api/v1'
   }
   // Динамически создаем инстанс OpenAI

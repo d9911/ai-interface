@@ -1,35 +1,67 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, ArrowRight, Send, Loader2, MessageSquare, ChevronDown } from 'lucide-react';
+import { Mic, ArrowRight, Send, Loader2, Globe } from 'lucide-react';
+
+// Словарь для мультиязычности
+const translations = {
+  en: {
+    greeting: "Hi there.",
+    question: "What would you like to know?",
+    subtitle: "Use one of the most common prompts below or ask your own question.",
+    placeholder: "Ask whatever you want...",
+    assistant: "AI ASSISTANT",
+    typing: "Assistant is thinking...",
+    disclaimer: "AI can make mistakes. Check important info.",
+    voiceNotSupported: "Your browser does not support voice input.",
+    voiceError: "Error during voice recording.",
+    langSwitch: "RU"
+  },
+  ru: {
+    greeting: "Привет.",
+    question: "Что вы хотите узнать?",
+    subtitle: "Используйте частые запросы или задайте свой собственный вопрос.",
+    placeholder: "Спросите о чем угодно...",
+    assistant: "ИИ АССИСТЕНТ",
+    typing: "Ассистент думает...",
+    disclaimer: "ИИ может допускать ошибки. Проверяйте важную информацию.",
+    voiceNotSupported: "Ваш браузер не поддерживает голосовой ввод.",
+    voiceError: "Ошибка при записи голоса.",
+    langSwitch: "EN"
+  }
+};
 
 function App() {
-  // Состояния приложения
+  const [lang, setLang] = useState('en');
   const [isChatStarted, setIsChatStarted] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]); // Хранение истории переписки
+  const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isRecording, setIsRecording] = useState(false);
 
+  const t = translations[lang];
   const messagesEndRef = useRef(null);
 
-  // Автоскролл к последнему сообщению
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Настройка Web Speech API (Голосовой ввод)
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognitionRef = useRef(null);
 
+  const toggleLang = () => {
+    setLang(prev => prev === 'en' ? 'ru' : 'en');
+  };
+
   const startRecording = () => {
     if (!SpeechRecognition) {
-      setError('Ваш браузер не поддерживает голосовой ввод.');
+      setError(t.voiceNotSupported);
       return;
     }
     setError('');
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
-    recognition.lang = 'ru-RU';
+    // Устанавливаем язык распознавания в зависимости от выбранного языка интерфейса
+    recognition.lang = lang === 'ru' ? 'ru-RU' : 'en-US';
     recognition.interimResults = false;
 
     recognition.onstart = () => setIsRecording(true);
@@ -38,7 +70,7 @@ function App() {
       setInput((prev) => prev + (prev ? ' ' : '') + transcript);
     };
     recognition.onerror = () => {
-      setError('Ошибка при записи голоса.');
+      setError(t.voiceError);
       setIsRecording(false);
     };
     recognition.onend = () => setIsRecording(false);
@@ -49,16 +81,13 @@ function App() {
     if (recognitionRef.current) recognitionRef.current.stop();
   };
 
-  // Функция отправки сообщения
-  const handleSubmit = async (e, textOverride = null) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    const textToSend = textOverride || input;
-    if (!textToSend.trim()) return;
+    if (!input.trim()) return;
 
-    // Переключаем на экран чата, если это первое сообщение
     if (!isChatStarted) setIsChatStarted(true);
 
-    const newUserMessage = { role: 'user', content: textToSend };
+    const newUserMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, newUserMessage]);
     setInput('');
     setIsLoading(true);
@@ -68,11 +97,11 @@ function App() {
       const res = await fetch('http://localhost:3001/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToSend }),
+        body: JSON.stringify({ text: newUserMessage.content }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+      if (!res.ok) throw new Error(data.error || 'Server error');
 
       setMessages((prev) => [...prev, { role: 'ai', content: data.reply }]);
     } catch (err) {
@@ -91,34 +120,45 @@ function App() {
   };
 
   // ==========================================
-  // VIEW 1: Стартовый экран (как на скриншоте)
+  // VIEW 1: Стартовый экран (xAI Style)
   // ==========================================
   if (!isChatStarted) {
     return (
-      <div className="min-h-screen bg-[#0A2540] text-white flex flex-col justify-between p-6 sm:p-12 transition-all duration-500">
-        <div className="max-w-3xl w-full mx-auto mt-12 sm:mt-24">
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg">
-            <MessageSquare size={24} className="text-white" />
-          </div>
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-6 sm:p-12 font-sans transition-colors duration-500">
 
-          <h1 className="text-3xl sm:text-4xl font-semibold mb-2">Hi there!</h1>
-          <h2 className="text-5xl sm:text-6xl font-bold mb-6 tracking-tight">What would you like to know?</h2>
-          <p className="text-gray-300 text-lg sm:text-xl font-light mb-12">
-            Use one of the most common prompts below<br className="hidden sm:block" /> or ask your own question
-          </p>
+        {/* Переключатель языка */}
+        <div className="absolute top-6 right-6">
+          <button
+            onClick={toggleLang}
+            className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase"
+          >
+            <Globe size={14} />
+            {t.langSwitch}
+          </button>
         </div>
 
-        <div className="max-w-3xl w-full mx-auto mb-8">
+        <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center">
+          <h1 className="text-4xl sm:text-5xl font-normal mb-2 tracking-tight text-[#ffffff]">
+            {t.greeting}
+          </h1>
+          <h2 className="text-5xl sm:text-7xl font-normal mb-6 tracking-tighter text-[#ffffff]">
+            {t.question}
+          </h2>
+          <p className="text-[#dadbdf] text-lg sm:text-xl font-normal mb-12 max-w-xl">
+            {t.subtitle}
+          </p>
+
           <form
             onSubmit={handleSubmit}
-            className="bg-[#152e4d] border border-[#2e4a6d] rounded-full p-2 flex items-center gap-2 focus-within:border-blue-500 transition-colors shadow-xl"
+            className="w-full bg-[#191919] border border-[#212327] rounded-full p-2 flex items-center gap-2 focus-within:border-white/50 transition-colors"
           >
             <button
               type="button"
               onMouseDown={startRecording}
               onMouseUp={stopRecording}
-              className={`p-3 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-blue-400 hover:bg-[#203a5c]'}`}
-              title="Удерживайте для записи голоса"
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              className={`p-3 rounded-full transition-colors ${isRecording ? 'bg-[#ff7a17] text-white' : 'text-[#dadbdf] hover:bg-[#212327]'}`}
             >
               <Mic size={24} />
             </button>
@@ -127,48 +167,57 @@ function App() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask whatever you want"
-              className="flex-1 bg-transparent text-white text-lg placeholder-gray-400 focus:outline-none px-2"
+              placeholder={t.placeholder}
+              className="flex-1 bg-transparent text-white text-lg placeholder-[#7d8187] focus:outline-none px-2 font-normal"
             />
 
             <button
               type="submit"
               disabled={!input.trim()}
-              className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="bg-white text-[#0a0a0a] p-3 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ArrowRight size={24} />
             </button>
           </form>
-          {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
+          {error && <p className="text-[#ff7a17] text-sm mt-4 font-mono uppercase tracking-wider">{error}</p>}
         </div>
       </div>
     );
   }
 
   // ==========================================
-  // VIEW 2: Экран Чата (Привычный интерфейс)
+  // VIEW 2: Экран Чата (xAI Style)
   // ==========================================
   return (
-    <div className="min-h-screen bg-[#212121] text-gray-100 flex flex-col font-sans transition-all duration-500">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#dadbdf] flex flex-col font-sans transition-colors duration-500">
+
       {/* Шапка чата */}
-      <header className="sticky top-0 z-10 bg-[#212121] text-gray-200 p-3 flex justify-between items-center px-4">
-        <button className="flex items-center gap-2 hover:bg-gray-800 p-2 rounded-lg transition-colors text-lg font-medium">
-          ChatGPT <span className="text-gray-400 text-sm">3.5</span> <ChevronDown size={16} className="text-gray-400" />
-        </button>
+      <header className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#212327] p-4 flex justify-between items-center">
+        <div className="max-w-3xl w-full mx-auto flex justify-between items-center">
+          <span className="font-mono text-xs uppercase tracking-[1.4px] text-[#ffffff]">
+            {t.assistant}
+          </span>
+          <button
+            onClick={toggleLang}
+            className="px-3 py-1.5 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase"
+          >
+            {t.langSwitch}
+          </button>
+        </div>
       </header>
 
       {/* Контейнер сообщений */}
       <main className="flex-1 overflow-y-auto scroll-smooth p-4">
-        <div className="max-w-3xl mx-auto space-y-6 pb-24">
+        <div className="max-w-3xl mx-auto w-full space-y-6 pb-32 pt-4">
           {messages.map((msg, index) => (
             <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3 text-base leading-relaxed ${
+                className={`max-w-[90%] sm:max-w-[80%] px-5 py-4 text-base font-normal leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-[#2f2f2f] text-gray-100' // Пузырь пользователя
+                    ? 'bg-[#191919] text-[#ffffff] border border-[#212327] rounded-[8px]' // User - card style
                     : msg.role === 'error'
-                      ? 'bg-red-900/50 text-red-200 border border-red-800' // Ошибка
-                      : 'bg-transparent text-gray-100' // Ответ ИИ (без фона)
+                      ? 'bg-transparent text-[#ff7a17] border border-[#ff7a17]/30 rounded-[8px]' // Error
+                      : 'bg-transparent text-[#dadbdf]' // AI - flat on canvas
                 }`}
               >
                 {msg.content}
@@ -177,9 +226,9 @@ function App() {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="flex items-center gap-2 text-gray-400 px-5 py-3">
-                <Loader2 size={20} className="animate-spin" />
-                <span>ChatGPT печатает...</span>
+              <div className="flex items-center gap-3 text-[#7d8187] px-5 py-3 font-mono text-xs uppercase tracking-widest">
+                <Loader2 size={16} className="animate-spin" />
+                <span>{t.typing}</span>
               </div>
             </div>
           )}
@@ -188,18 +237,19 @@ function App() {
       </main>
 
       {/* Панель ввода */}
-      <footer className="fixed bottom-0 w-full bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-6 pb-6 px-4">
-        <div className="max-w-3xl mx-auto">
+      <footer className="fixed bottom-0 w-full bg-[#0a0a0a] border-t border-[#212327] pt-4 pb-6 px-4">
+        <div className="max-w-3xl mx-auto w-full">
           <form
             onSubmit={handleSubmit}
-            className="bg-[#2f2f2f] rounded-[24px] p-2 flex items-end gap-2 focus-within:ring-1 focus-within:ring-gray-500 shadow-lg"
+            className="bg-[#191919] border border-[#212327] rounded-[8px] p-2 flex items-end gap-2 focus-within:border-[#7d8187] transition-colors"
           >
             <button
               type="button"
               onMouseDown={startRecording}
               onMouseUp={stopRecording}
-              className={`p-2 sm:p-3 mb-1 rounded-full transition-colors ${isRecording ? 'text-red-400 bg-red-900/30' : 'text-gray-400 hover:text-gray-200'}`}
-              title="Голосовой ввод"
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              className={`p-2 sm:p-3 mb-1 rounded-full transition-colors ${isRecording ? 'text-[#ff7a17]' : 'text-[#7d8187] hover:text-white hover:bg-[#212327]'}`}
             >
               <Mic size={20} />
             </button>
@@ -208,21 +258,21 @@ function App() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything"
-              className="flex-1 bg-transparent text-gray-100 resize-none max-h-32 min-h-[44px] py-3 px-2 focus:outline-none"
+              placeholder={t.placeholder}
+              className="flex-1 bg-transparent text-[#ffffff] resize-none max-h-32 min-h-[44px] py-3 px-2 focus:outline-none font-normal"
               rows="1"
             />
 
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="mb-1 p-2 sm:p-3 bg-white text-black rounded-full disabled:bg-[#424242] disabled:text-gray-500 transition-colors"
+              className="mb-1 p-2 sm:p-3 bg-white text-[#0a0a0a] rounded-full disabled:bg-[#212327] disabled:text-[#7d8187] transition-colors"
             >
               <Send size={18} />
             </button>
           </form>
-          <div className="text-center text-xs text-gray-500 mt-3">
-            ChatGPT can make mistakes. Check important info.
+          <div className="text-center text-xs text-[#7d8187] mt-3 font-normal">
+            {t.disclaimer}
           </div>
         </div>
       </footer>

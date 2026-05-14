@@ -6,13 +6,13 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Настройка Middleware
 app.use(cors());
 app.use(express.json());
 
-// Инициализация OpenAI клиента
+// Инициализируем клиента с базовым URL OpenRouter
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 app.post('/api/chat', async (req, res) => {
@@ -24,7 +24,8 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // Или любая другая доступная/бесплатная модель
+      // Используем бесплатную модель Llama 3 (или любую другую бесплатную с OpenRouter)
+      model: 'meta-llama/llama-3-8b-instruct:free',
       messages: [{ role: 'user', content: text }],
     });
 
@@ -32,7 +33,8 @@ app.post('/api/chat', async (req, res) => {
     res.json({ reply });
   } catch (error) {
     console.error('Ошибка API:', error);
-    res.status(500).json({ error: 'Произошла ошибка при обращении к ИИ-сервису' });
+    // Теперь ошибка будет отдаваться на фронт более информативно
+    res.status(500).json({ error: error.message || 'Произошла ошибка при обращении к ИИ-сервису' });
   }
 });
 

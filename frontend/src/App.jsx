@@ -81,8 +81,7 @@ function App() {
     recognition.interimResults = false
 
     recognition.onstart = () => setIsRecording(true)
-    recognition.onresult = (e) =>
-      setInput((prev) => prev + (prev ? ' ' : '') + e.results[0][0].transcript)
+    recognition.onresult = (e) => setInput((prev) => prev + (prev ? ' ' : '') + e.results[0][0].transcript)
     recognition.onerror = () => {
       setError(t.voiceError)
       setIsRecording(false)
@@ -149,14 +148,12 @@ function App() {
 
     const autoModel = availableModels.find((m) => m.provider === 'openrouter_auto')
     const freeModels = availableModels.filter((m) => m.provider === 'openrouter')
-    const premiumModels = availableModels.filter(
-      (m) => m.provider === 'openai' || m.provider === 'deepseek',
-    )
+    const premiumModels = availableModels.filter((m) => m.provider === 'openai' || m.provider === 'deepseek')
     // 1. Добавляем фильтр для новых моделей:
     const freeTheAiModels = availableModels.filter((m) => m.provider === 'freetheai')
+    const altModels = availableModels.filter((m) => !['openrouter_auto', 'openrouter', 'openai', 'deepseek', 'freetheai'].includes(m.provider))
 
-    const currentModelName =
-      availableModels.find((m) => m.id === selectedModel)?.displayName || t.noModels
+    const currentModelName = availableModels.find((m) => m.id === selectedModel)?.displayName || t.noModels
 
     // Обработчик кликов (одиночный = открыть/закрыть, тройной = расширить)
     const handleToggle = (e) => {
@@ -182,10 +179,7 @@ function App() {
     }
 
     return (
-      <div
-        className="relative inline-block w-[60%] sm:w-auto max-w-[200px] sm:max-w-md z-50"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative inline-block w-[60%] sm:w-auto max-w-[200px] sm:max-w-md z-50" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={handleToggle}
@@ -194,10 +188,7 @@ function App() {
           title="Triple click to expand fully"
         >
           <span className="truncate mr-2">{currentModelName}</span>
-          <ChevronDown
-            size={14}
-            className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-          />
+          <ChevronDown size={14} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isOpen && availableModels.length > 0 && (
@@ -219,9 +210,7 @@ function App() {
               {/* Группа бесплатных моделей */}
               {freeModels.length > 0 && (
                 <>
-                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">
-                    ── Free Models ──
-                  </div>
+                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">── Free Models ──</div>
                   {freeModels.map((m) => (
                     <div
                       key={m.id}
@@ -237,9 +226,7 @@ function App() {
               {/* Группа платных моделей */}
               {premiumModels.length > 0 && (
                 <>
-                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">
-                    ── Premium Models ──
-                  </div>
+                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">── Premium Models ──</div>
                   {premiumModels.map((m) => (
                     <div
                       key={m.id}
@@ -254,15 +241,29 @@ function App() {
               {/* Группа моделей FreeTheAI */}
               {freeTheAiModels.length > 0 && (
                 <>
-                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">
-                    ── FreeTheAI (Top Models) ──
-                  </div>
+                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">── FreeTheAI (Top Models) ──</div>
                   {freeTheAiModels.map((m) => (
                     <div
                       key={m.id}
                       onClick={() => handleSelect(m.id)}
                       // Сделаем цвет текста чуть другим (например зеленым), чтобы выделить их крутость
                       className={`px-4 py-2 cursor-pointer font-mono text-xs hover:bg-[#212327] ${selectedModel === m.id ? 'bg-[#212327] text-[#6be74c]' : 'text-[#6be74c]/80'}`}
+                    >
+                      {m.displayName}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Группа Альтернативных и Локальных моделей */}
+              {altModels.length > 0 && (
+                <>
+                  <div className="px-4 py-1 mt-2 text-[10px] text-[#7d8187] uppercase tracking-widest bg-[#0a0a0a]">── Alt & Local Models ──</div>
+                  {altModels.map((m) => (
+                    <div
+                      key={m.id}
+                      onClick={() => handleSelect(m.id)}
+                      className={`px-4 py-2 cursor-pointer font-mono text-xs hover:bg-[#212327] ${selectedModel === m.id ? 'bg-[#212327] text-[#ffc285]' : 'text-[#ffc285]/80'}`}
                     >
                       {m.displayName}
                     </div>
@@ -293,20 +294,11 @@ function App() {
 
         {/* Адаптивные заголовки */}
         <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center mt-12 sm:mt-0">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal mb-2 tracking-tight text-[#ffffff]">
-            {t.greeting}
-          </h1>
-          <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal mb-4 sm:mb-6 tracking-tighter text-[#ffffff] leading-tight">
-            {t.question}
-          </h2>
-          <p className="text-[#dadbdf] text-sm sm:text-lg md:text-xl font-normal mb-8 sm:mb-12 max-w-[90%] sm:max-w-xl">
-            {t.subtitle}
-          </p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal mb-2 tracking-tight text-[#ffffff]">{t.greeting}</h1>
+          <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal mb-4 sm:mb-6 tracking-tighter text-[#ffffff] leading-tight">{t.question}</h2>
+          <p className="text-[#dadbdf] text-sm sm:text-lg md:text-xl font-normal mb-8 sm:mb-12 max-w-[90%] sm:max-w-xl">{t.subtitle}</p>
 
-          <form
-            onSubmit={handleSubmit}
-            className="w-full bg-[#191919] border border-[#212327] rounded-full p-1 sm:p-2 flex items-center gap-1 sm:gap-2 focus-within:border-white/50 transition-colors"
-          >
+          <form onSubmit={handleSubmit} className="w-full bg-[#191919] border border-[#212327] rounded-full p-1 sm:p-2 flex items-center gap-1 sm:gap-2 focus-within:border-white/50 transition-colors">
             <button
               type="button"
               onMouseDown={startRecording}
@@ -337,11 +329,7 @@ function App() {
               <ArrowRight className="w-4 h-4 sm:w-6 sm:h-6" />
             </button>
           </form>
-          {error && (
-            <p className="text-[#ff7a17] text-sm mt-4 font-mono uppercase tracking-wider">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-[#ff7a17] text-sm mt-4 font-mono uppercase tracking-wider">{error}</p>}
         </div>
       </div>
     )
@@ -354,10 +342,7 @@ function App() {
       <header className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#212327] p-4">
         <div className="max-w-3xl w-full mx-auto flex justify-between items-center">
           <ModelSelector />
-          <button
-            onClick={toggleLang}
-            className="px-3 py-1.5 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase"
-          >
+          <button onClick={toggleLang} className="px-3 py-1.5 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase">
             {t.langSwitch}
           </button>
         </div>
@@ -366,10 +351,7 @@ function App() {
       <main className="flex-1 overflow-y-auto scroll-smooth p-4">
         <div className="max-w-3xl mx-auto w-full space-y-6 pb-32 pt-4">
           {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[90%] sm:max-w-[80%] px-5 py-4 text-base font-normal leading-relaxed ${msg.role === 'user' ? 'bg-[#191919] text-[#ffffff] border border-[#212327] rounded-[8px]' : msg.role === 'error' ? 'bg-transparent text-[#ff7a17] border border-[#ff7a17]/30 rounded-[8px]' : 'bg-transparent text-[#dadbdf]'}`}
               >
@@ -391,10 +373,7 @@ function App() {
 
       <footer className="fixed bottom-0 w-full bg-[#0a0a0a] border-t border-[#212327] pt-4 pb-6 px-4">
         <div className="max-w-3xl mx-auto w-full">
-          <form
-            onSubmit={handleSubmit}
-            className="bg-[#191919] border border-[#212327] rounded-[8px] p-2 flex items-end gap-2 focus-within:border-[#7d8187] transition-colors"
-          >
+          <form onSubmit={handleSubmit} className="bg-[#191919] border border-[#212327] rounded-[8px] p-2 flex items-end gap-2 focus-within:border-[#7d8187] transition-colors">
             <button
               type="button"
               onMouseDown={startRecording}

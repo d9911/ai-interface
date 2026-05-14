@@ -210,19 +210,33 @@ const AVAILABLE_MODELS = [
     requiredKey: 'FREETHEAI_API_KEY',
     provider: 'freetheai',
   },
+
+  // НОВЫЕ АЛЬТЕРНАТИВЫ ИЗ FREE-CLAUDE-CODE
+
+  // NVIDIA NIM (OpenAI-compatible)
+  { id: 'nvidia/nemotron-3-super-120b-a12b', displayName: 'NVIDIA NIM: Nemotron 120B', requiredKey: 'NVIDIA_NIM_API_KEY', provider: 'nvidia_nim' },
+  { id: 'meta/llama-3.1-70b-instruct', displayName: 'NVIDIA NIM: Llama 3.1 70B', requiredKey: 'NVIDIA_NIM_API_KEY', provider: 'nvidia_nim' },
+
+  // Kimi / Moonshot (OpenAI-compatible)
+  { id: 'moonshot-v1-8k', displayName: 'Kimi: Moonshot 8K', requiredKey: 'KIMI_API_KEY', provider: 'kimi' },
+
+  // OpenCode Zen (OpenAI-compatible)
+  { id: 'opencode-zen', displayName: 'OpenCode Zen', requiredKey: 'OPENCODE_API_KEY', provider: 'opencode' },
+
+  // Локальные модели (Без ключей, активируются флагами в .env)
+  { id: 'local-model', displayName: 'LM Studio (Local)', requiredKey: 'LM_STUDIO_ENABLED', provider: 'lmstudio' },
+  { id: 'llama3', displayName: 'Ollama (Local)', requiredKey: 'OLLAMA_ENABLED', provider: 'ollama' },
+  { id: 'local-llama', displayName: 'Llama.cpp (Local)', requiredKey: 'LLAMACPP_ENABLED', provider: 'llamacpp' },
+
+  // Экспериментальные (Anthropic-compatible, могут требовать адаптера на клиенте)
+  { id: 'claude-3-5-sonnet-20240620', displayName: 'Z.ai API', requiredKey: 'ZAI_API_KEY', provider: 'zai' },
+  { id: 'claude-3-haiku-20240307', displayName: 'Wafer API', requiredKey: 'WAFER_API_KEY', provider: 'wafer' },
 ]
 
 // Endpoint 1: Отдаем фронтенду список доступных моделей
 app.get('/api/models', (req, res) => {
   const activeModels = AVAILABLE_MODELS.filter((model) => process.env[model.requiredKey])
-
-  // Теперь мы отдаем еще и поле provider, чтобы фронтенд мог сгруппировать список
-  const safeModels = activeModels.map((m) => ({
-    id: m.id,
-    displayName: m.displayName,
-    provider: m.provider,
-  }))
-
+  const safeModels = activeModels.map((m) => ({ id: m.id, displayName: m.displayName, provider: m.provider }))
   res.json(safeModels)
 })
 
@@ -234,28 +248,45 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'Текст и ID модели обязательны' })
   }
 
-  // Находим выбранную модель в нашем конфиге
   const targetModel = AVAILABLE_MODELS.find((m) => m.id === modelId)
   if (!targetModel) {
     return res.status(400).json({ error: 'Выбрана неизвестная модель' })
   }
 
-  const apiKey = process.env[targetModel.requiredKey]
+  // Для локальных серверов ключ не нужен, ставим заглушку 'local'
+  const isLocal = ['lmstudio', 'ollama', 'llamacpp'].includes(targetModel.provider)
+  const apiKey = isLocal ? 'local' : process.env[targetModel.requiredKey]
+
   if (!apiKey) {
     return res.status(503).json({ error: 'API ключ для этой модели не настроен на сервере' })
   }
 
-  // Определяем Base URL в зависимости от провайдера
-  let baseURL = undefined // По умолчанию для OpenAI
+  // Роутинг базовых URL под новых провайдеров
+  let baseURL = undefined
   if (targetModel.provider === 'deepseek') {
     baseURL = 'https://api.deepseek.com/v1'
   } else if (targetModel.provider === 'openrouter' || targetModel.provider === 'openrouter_auto') {
     baseURL = 'https://openrouter.ai/api/v1'
   } else if (targetModel.provider === 'freetheai') {
     baseURL = 'https://api.freetheai.xyz/v1'
+  } else if (targetModel.provider === 'nvidia_nim') {
+    baseURL = 'https://integrate.api.nvidia.com/v1'
+  } else if (targetModel.provider === 'kimi') {
+    baseURL = 'https://api.moonshot.ai/v1'
+  } else if (targetModel.provider === 'opencode') {
+    baseURL = 'https://opencode.ai/zen/v1'
+  } else if (targetModel.provider === 'zai') {
+    baseURL = process.env.ZAI_BASE_URL || 'https://api.z.ai/api/coding/paas/v4'
+  } else if (targetModel.provider === 'wafer') {
+    baseURL = 'https://pass.wafer.ai/v1'
+  } else if (targetModel.provider === 'lmstudio') {
+    baseURL = process.env.LM_STUDIO_BASE_URL || 'http://localhost:1234/v1'
+  } else if (targetModel.provider === 'llamacpp') {
+    baseURL = process.env.LLAMACPP_BASE_URL || 'http://localhost:8080/v1'
+  } else if (targetModel.provider === 'ollama') {
+    baseURL = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434') + '/v1'
   }
 
-  // Динамически создаем инстанс OpenAI
   const openai = new OpenAI({ apiKey, baseURL })
 
   try {
@@ -268,14 +299,10 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     console.error(`Ошибка API (${targetModel.provider}):`, error)
 
-    // Умный перехват ошибки Discord Check-in от FreeTheAI
     if (error.status === 403 && error.error?.type === 'daily_checkin_required') {
-      return res.status(403).json({
-        error:
-          'Требуется активация ключа FreeTheAI. Зайдите в их Discord и отправьте команду /checkin',
-      })
+      return res.status(403).json({ error: 'Требуется активация ключа FreeTheAI. Зайдите в их Discord и отправьте команду /checkin' })
     }
-    // Обработка остальных ошибок
+
     res.status(500).json({ error: error.message || 'Ошибка ответа ИИ' })
   }
 })

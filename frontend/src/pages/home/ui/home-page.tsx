@@ -8,8 +8,17 @@ import { MessageInput } from '@/widgets/message-input/ui/message-input'
 import { translations, Language } from '@/shared/config/i18n'
 import { Message, Model } from '@/entities/message/model/types'
 import { useLang } from '@/shared/context/lang-context'
+import { ISpeechRecognition, ISpeechRecognitionEvent } from './type'
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => ISpeechRecognition
+    webkitSpeechRecognition?: new () => ISpeechRecognition
+  }
+}
 
 export const HomePage = () => {
+  const [sessionId, setSessionId] = useState('')
   const { language: lang, changeLanguage } = useLang()
 
   const [isChatStarted, setIsChatStarted] = useState(false)
@@ -44,21 +53,27 @@ export const HomePage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-  const recognitionRef = useRef<any>(null)
+  const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition
+  const recognitionRef = useRef<ISpeechRecognition | null>(null)
 
   const toggleLang = () => changeLanguage(lang === 'en' ? 'ru' : 'en')
 
   const startRecording = () => {
-    if (!SpeechRecognition) return setError(t.voiceNotSupported)
+    if (!SpeechRecognitionClass) return setError(t.voiceNotSupported)
+
     setError('')
-    const recognition = new SpeechRecognition()
+
+    const recognition = new SpeechRecognitionClass()
+
     recognitionRef.current = recognition
     recognition.lang = lang === 'ru' ? 'ru-RU' : 'en-US'
     recognition.interimResults = false
 
     recognition.onstart = () => setIsRecording(true)
-    recognition.onresult = (e: any) => setInput((prev) => prev + (prev ? ' ' : '') + e.results[0][0].transcript)
+
+    // Используем новое имя интерфейса здесь:
+    recognition.onresult = (e: ISpeechRecognitionEvent) => setInput((prev) => prev + (prev ? ' ' : '') + e.results[0][0].transcript)
+
     recognition.onerror = () => {
       setError(t.voiceError)
       setIsRecording(false)
@@ -76,7 +91,8 @@ export const HomePage = () => {
     if (!isChatStarted) setIsChatStarted(true)
 
     const newUserMessage: Message = { role: 'user', content: input }
-    setMessages((prev) => [...prev, newUserMessage])
+    // Сразу добавляем сообщение пользователя и ПУСТОЕ сообщение ИИ
+    setMessages((prev) => [...prev, newUserMessage, { role: 'ai', content: '' }])
     setInput('')
     setIsLoading(true)
     setError('')
@@ -88,17 +104,67 @@ export const HomePage = () => {
         body: JSON.stringify({
           text: newUserMessage.content,
           modelId: selectedModel,
-          history: messages, // Send history for context
+          history: messages,
+          sessionId: sessionId,
         }),
       })
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Server error')
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Server error')
+      }
 
-      setMessages((prev) => [...prev, { role: 'ai', content: data.reply }])
-    } catch (err: any) {
-      setError(err.message)
-      setMessages((prev) => [...prev, { role: 'error', content: err.message }])
+      // Читаем поток (SSE)
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let aiFullResponse = ''
+
+      if (reader) {
+        setIsLoading(false) // Выключаем лоадер, так как текст начал поступать
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const dataStr = line.replace('data: ', '').trim()
+              if (dataStr === '[DONE]') break
+
+              try {
+                const parsed = JSON.parse(dataStr)
+                // Если с бэкенда пришел sessionId - сохраняем его в стейт!
+                if (parsed.sessionId && !sessionId) {
+                  setSessionId(parsed.sessionId)
+                }
+                if (parsed.text) {
+                  aiFullResponse += parsed.text
+
+                  // Обновляем ТОЛЬКО последнее сообщение (ИИ)
+                  setMessages((prev) => {
+                    const newMessages = [...prev]
+                    newMessages[newMessages.length - 1].content = aiFullResponse
+                    return newMessages
+                  })
+                }
+              } catch (e) {
+                console.error('Ошибка парсинга чанка:', e)
+              }
+            }
+          }
+        }
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Произошла неизвестная ошибка'
+      setError(errorMessage)
+      setMessages((prev) => {
+        const newMessages = [...prev]
+        newMessages[newMessages.length - 1] = { role: 'error', content: errorMessage }
+        return newMessages
+      })
     } finally {
       setIsLoading(false)
     }
@@ -137,9 +203,16 @@ export const HomePage = () => {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#dadbdf] flex flex-col font-sans transition-colors duration-500">
       <header className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#212327] p-4">
-        <div className="max-w-3xl w-full mx-auto flex justify-between items-center">
+        <div className="max-w-3xl w-full mx-auto flex justify-between items-center gap-2">
           <ModelSelector availableModels={availableModels} selectedModel={selectedModel} setSelectedModel={setSelectedModel} t={t} />
-          <button onClick={toggleLang} className="px-3 py-1.5 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase">
+          <input
+            type="text"
+            value={sessionId}
+            onChange={(e) => setSessionId(e.target.value)}
+            placeholder="Session ID (auto)"
+            className="flex-1 bg-[#191919] border border-[#212327] rounded-full px-3 py-1.5 text-xs text-center text-[#7d8187] focus:outline-none focus:border-[#ff7a17]/50"
+          />
+          <button onClick={toggleLang} className="px-3 py-1.5 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase shrink-0">
             {t.langSwitch}
           </button>
         </div>

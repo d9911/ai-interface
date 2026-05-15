@@ -7,9 +7,11 @@ import { ChatLayout } from '@/widgets/chat-layout/ui/chat-layout'
 import { MessageInput } from '@/widgets/message-input/ui/message-input'
 import { translations, Language } from '@/shared/config/i18n'
 import { Message, Model } from '@/entities/message/model/types'
+import { useLang } from '@/shared/context/lang-context'
 
 export const HomePage = () => {
-  const [lang, setLang] = useState<Language>('en')
+  const { language: lang, changeLanguage } = useLang()
+
   const [isChatStarted, setIsChatStarted] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -45,7 +47,7 @@ export const HomePage = () => {
   const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
   const recognitionRef = useRef<any>(null)
 
-  const toggleLang = () => setLang((prev) => (prev === 'en' ? 'ru' : 'en'))
+  const toggleLang = () => changeLanguage(lang === 'en' ? 'ru' : 'en')
 
   const startRecording = () => {
     if (!SpeechRecognition) return setError(t.voiceNotSupported)

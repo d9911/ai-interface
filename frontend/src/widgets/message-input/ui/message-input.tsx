@@ -1,6 +1,7 @@
 import { Mic, Send } from 'lucide-react'
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { Translation } from '@/shared/config/i18n'
+import s from './message-input.module.scss' // Импорт стилей
 
 interface MessageInputProps {
   t: Translation
@@ -17,37 +18,46 @@ interface MessageInputProps {
 }
 
 export const MessageInput = ({ t, input, setInput, handleSubmit, startRecording, stopRecording, isRecording, isLoading, selectedModel, handleKeyDown }: MessageInputProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Эффект для автоматической подстройки высоты
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto' // Сбрасываем для пересчета
+      const nextHeight = textarea.scrollHeight
+      // Высота установится сама через CSS max-height, если текст слишком большой
+      textarea.style.height = `${nextHeight}px`
+    }
+  }, [input])
+
   return (
-    <footer className="fixed bottom-0 w-full bg-[#0a0a0a] border-t border-[#212327] pt-4 pb-6 px-4">
-      <div className="max-w-3xl mx-auto w-full">
-        <form onSubmit={handleSubmit} className="bg-[#191919] border border-[#212327] rounded-[8px] p-2 flex items-end gap-2 focus-within:border-[#7d8187] transition-colors">
-          <button
-            type="button"
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
-            className={`p-2 sm:p-3 mb-1 rounded-full transition-colors ${isRecording ? 'text-[#ff7a17]' : 'text-[#7d8187] hover:text-white hover:bg-[#212327]'}`}
+    <footer className={s.footer}>
+      <div className={s.container}>
+        <div className="container-form">
+          <form
+            onSubmit={handleSubmit}
+            className={`${s.form} relative flex w-full items-center gap-1 p-1 border border-[#212327] bg-[#191919]/80 backdrop-blur-md  shadow-2xl transition-all focus-within:border-[#ff7a17]/50 sm:p-2 sm:gap-2`}
           >
-            <Mic size={20} />
-          </button>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t.placeholder}
-            className="flex-1 bg-transparent text-[#ffffff] resize-none max-h-32 min-h-[44px] py-3 px-2 focus:outline-none font-normal"
-            rows={1}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim() || !selectedModel}
-            className="mb-1 p-2 sm:p-3 bg-white text-[#0a0a0a] rounded-full disabled:bg-[#212327] disabled:text-[#7d8187] transition-colors"
-          >
-            <Send size={18} />
-          </button>
-        </form>
-        <div className="text-center text-xs text-[#7d8187] mt-3 font-normal">{t.disclaimer}</div>
+            <button
+              type="button"
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              className={`${s.iconButton} ${isRecording ? s.recording : ''}`}
+            >
+              <Mic size={20} />
+            </button>
+
+            <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={t.placeholder} className={s.textarea} rows={1} />
+
+            <button type="submit" disabled={isLoading || !input.trim() || !selectedModel} className={s.sendButton}>
+              <Send size={18} />
+            </button>
+          </form>
+        </div>
+        <div className={s.disclaimer}>{t.disclaimer}</div>
       </div>
     </footer>
   )

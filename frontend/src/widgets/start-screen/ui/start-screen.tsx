@@ -1,38 +1,26 @@
-import { Mic, ArrowRight } from 'lucide-react';
-import React from 'react';
-import { Translation } from '@/shared/config/i18n';
-
+import { Mic, ArrowRight } from 'lucide-react'
+import React from 'react'
+import { Translation } from '@/shared/config/i18n'
+import s from '../../message-input/ui/message-input.module.scss'
 interface StartScreenProps {
-  t: Translation;
-  input: string;
-  setInput: (val: string) => void;
-  handleSubmit: (e?: React.FormEvent) => void;
-  startRecording: () => void;
-  stopRecording: () => void;
-  isRecording: boolean;
-  selectedModel: string;
+  t: Translation
+  input: string
+  setInput: (val: string) => void
+  handleSubmit: (e?: React.FormEvent) => void
+  startRecording: () => void
+  stopRecording: () => void
+  isRecording: boolean
+  selectedModel: string
 }
 
-export const StartScreen = ({
-  t,
-  input,
-  setInput,
-  handleSubmit,
-  startRecording,
-  stopRecording,
-  isRecording,
-  selectedModel,
-}: StartScreenProps) => {
+export const StartScreen = ({ t, input, setInput, handleSubmit, startRecording, stopRecording, isRecording, selectedModel }: StartScreenProps) => {
   return (
     <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center mt-12 sm:mt-0">
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal mb-2 tracking-tight text-[#ffffff]">{t.greeting}</h1>
       <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal mb-4 sm:mb-6 tracking-tighter text-[#ffffff] leading-tight">{t.question}</h2>
       <p className="text-[#dadbdf] text-sm sm:text-lg md:text-xl font-normal mb-8 sm:mb-12 max-w-[90%] sm:max-w-xl">{t.subtitle}</p>
 
-      <form
-        onSubmit={handleSubmit}
-        className="w-full bg-[#191919] border border-[#212327] rounded-full p-1 sm:p-2 flex items-center gap-1 sm:gap-2 focus-within:border-white/50 transition-colors"
-      >
+      <form onSubmit={handleSubmit} className={s.startForm}>
         <button
           type="button"
           onMouseDown={startRecording}
@@ -61,5 +49,5 @@ export const StartScreen = ({
         </button>
       </form>
     </div>
-  );
-};
+  )
+}

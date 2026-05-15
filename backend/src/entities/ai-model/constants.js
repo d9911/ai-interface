@@ -1,14 +1,3 @@
-const express = require('express')
-const cors = require('cors')
-const { OpenAI } = require('openai')
-require('dotenv').config()
-
-const app = express()
-const port = process.env.PORT || 3001
-
-app.use(cors())
-app.use(express.json())
-
 // Конфигурация доступных моделей (Динамически фильтруется по .env) 2026.05.14 https://openrouter.ai/models?q=free
 const AVAILABLE_MODELS = [
   // ПЛАТНЫЕ МОДЕЛИ OPENAI
@@ -233,80 +222,5 @@ const AVAILABLE_MODELS = [
   { id: 'claude-3-haiku-20240307', displayName: 'Wafer API', requiredKey: 'WAFER_API_KEY', provider: 'wafer' },
 ]
 
-// Endpoint 1: Отдаем фронтенду список доступных моделей
-app.get('/api/models', (req, res) => {
-  const activeModels = AVAILABLE_MODELS.filter((model) => process.env[model.requiredKey])
-  const safeModels = activeModels.map((m) => ({ id: m.id, displayName: m.displayName, provider: m.provider }))
-  res.json(safeModels)
-})
-
-// Endpoint 2: Обработка чата
-app.post('/api/chat', async (req, res) => {
-  const { text, modelId } = req.body
-
-  if (!text || !modelId) {
-    return res.status(400).json({ error: 'Текст и ID модели обязательны' })
-  }
-
-  const targetModel = AVAILABLE_MODELS.find((m) => m.id === modelId)
-  if (!targetModel) {
-    return res.status(400).json({ error: 'Выбрана неизвестная модель' })
-  }
-
-  // Для локальных серверов ключ не нужен, ставим заглушку 'local'
-  const isLocal = ['lmstudio', 'ollama', 'llamacpp'].includes(targetModel.provider)
-  const apiKey = isLocal ? 'local' : process.env[targetModel.requiredKey]
-
-  if (!apiKey) {
-    return res.status(503).json({ error: 'API ключ для этой модели не настроен на сервере' })
-  }
-
-  // Роутинг базовых URL под новых провайдеров
-  let baseURL = undefined
-  if (targetModel.provider === 'deepseek') {
-    baseURL = 'https://api.deepseek.com/v1'
-  } else if (targetModel.provider === 'openrouter' || targetModel.provider === 'openrouter_auto') {
-    baseURL = 'https://openrouter.ai/api/v1'
-  } else if (targetModel.provider === 'freetheai') {
-    baseURL = 'https://api.freetheai.xyz/v1'
-  } else if (targetModel.provider === 'nvidia_nim') {
-    baseURL = 'https://integrate.api.nvidia.com/v1'
-  } else if (targetModel.provider === 'kimi') {
-    baseURL = 'https://api.moonshot.ai/v1'
-  } else if (targetModel.provider === 'opencode') {
-    baseURL = 'https://opencode.ai/zen/v1'
-  } else if (targetModel.provider === 'zai') {
-    baseURL = process.env.ZAI_BASE_URL || 'https://api.z.ai/api/coding/paas/v4'
-  } else if (targetModel.provider === 'wafer') {
-    baseURL = 'https://pass.wafer.ai/v1'
-  } else if (targetModel.provider === 'lmstudio') {
-    baseURL = process.env.LM_STUDIO_BASE_URL || 'http://localhost:1234/v1'
-  } else if (targetModel.provider === 'llamacpp') {
-    baseURL = process.env.LLAMACPP_BASE_URL || 'http://localhost:8080/v1'
-  } else if (targetModel.provider === 'ollama') {
-    baseURL = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434') + '/v1'
-  }
-
-  const openai = new OpenAI({ apiKey, baseURL })
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: targetModel.id,
-      messages: [{ role: 'user', content: text }],
-    })
-
-    res.json({ reply: response.choices[0].message.content })
-  } catch (error) {
-    console.error(`Ошибка API (${targetModel.provider}):`, error)
-
-    if (error.status === 403 && error.error?.type === 'daily_checkin_required') {
-      return res.status(403).json({ error: 'Требуется активация ключа FreeTheAI. Зайдите в их Discord и отправьте команду /checkin' })
-    }
-
-    res.status(500).json({ error: error.message || 'Ошибка ответа ИИ' })
-  }
-})
-
-app.listen(port, () => {
-  console.log(`Backend запущен на порту ${port}`)
-})
+export { AVAILABLE_MODELS }
+export default AVAILABLE_MODELS

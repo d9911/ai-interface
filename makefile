@@ -19,7 +19,7 @@ clean-ports:
 # Запуск только бэкенда (с предварительной очисткой порта)
 dev-backend: clean-ports
 	@echo "Запускаем Backend..."
-	cd backend && node server.js
+	cd backend && node src/app/server.js
 
 # Запуск только фронтенда (на порту 5173)
 dev-frontend:
@@ -33,7 +33,7 @@ dev: clean-ports
 
 # Внутренние таски для параллельного запуска без двойной очистки портов
 _run-backend:
-	cd backend && node server.js
+	cd backend && node src/app/server.js
 
 _run-frontend:
 	cd frontend && npm run dev

@@ -9,6 +9,7 @@ import { translations, Language } from '@/shared/config/i18n'
 import { Message, Model } from '@/entities/message/model/types'
 import { useLang } from '@/shared/context/lang-context'
 import { ISpeechRecognition, ISpeechRecognitionEvent } from './type'
+import { SessionInput } from '@/shared/ui/session-input/session-input'
 
 declare global {
   interface Window {
@@ -194,6 +195,8 @@ export const HomePage = () => {
           startRecording={startRecording}
           stopRecording={stopRecording}
           selectedModel={selectedModel}
+          sessionId={sessionId}
+          setSessionId={setSessionId}
         />
         {error && <p className="text-[#ff7a17] text-sm mt-4 font-mono uppercase tracking-wider">{error}</p>}
       </div>
@@ -205,13 +208,8 @@ export const HomePage = () => {
       <header className="sticky top-0 z-10 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#212327] p-4">
         <div className="max-w-3xl w-full mx-auto flex justify-between items-center gap-2">
           <ModelSelector availableModels={availableModels} selectedModel={selectedModel} setSelectedModel={setSelectedModel} t={t} />
-          <input
-            type="text"
-            value={sessionId}
-            onChange={(e) => setSessionId(e.target.value)}
-            placeholder="Session ID (auto)"
-            className="flex-1 bg-[#191919] border border-[#212327] rounded-full px-3 py-1.5 text-xs text-center text-[#7d8187] focus:outline-none focus:border-[#ff7a17]/50"
-          />
+          <SessionInput sessionId={sessionId} setSessionId={setSessionId} wrapperClassName="flex-1" inputClassName="px-3 py-1.5 text-xs" />
+
           <button onClick={toggleLang} className="px-3 py-1.5 rounded-full border border-white/25 text-white hover:bg-white/10 transition-colors font-mono text-xs tracking-widest uppercase shrink-0">
             {t.langSwitch}
           </button>

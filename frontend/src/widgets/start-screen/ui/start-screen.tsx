@@ -2,6 +2,8 @@ import { Mic, ArrowRight } from 'lucide-react'
 import React from 'react'
 import { Translation } from '@/shared/config/i18n'
 import s from '../../message-input/ui/message-input.module.scss'
+import { SessionInput } from '@/shared/ui/session-input/session-input'
+
 interface StartScreenProps {
   t: Translation
   input: string
@@ -11,14 +13,18 @@ interface StartScreenProps {
   stopRecording: () => void
   isRecording: boolean
   selectedModel: string
+  sessionId: string
+  setSessionId: (val: string) => void
 }
 
-export const StartScreen = ({ t, input, setInput, handleSubmit, startRecording, stopRecording, isRecording, selectedModel }: StartScreenProps) => {
+export const StartScreen = ({ t, input, setInput, handleSubmit, startRecording, stopRecording, isRecording, selectedModel, sessionId, setSessionId }: StartScreenProps) => {
   return (
     <div className="max-w-3xl w-full mx-auto flex flex-col items-center text-center mt-12 sm:mt-0">
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal mb-2 tracking-tight text-[#ffffff]">{t.greeting}</h1>
       <h2 className="text-3xl sm:text-5xl md:text-7xl font-normal mb-4 sm:mb-6 tracking-tighter text-[#ffffff] leading-tight">{t.question}</h2>
-      <p className="text-[#dadbdf] text-sm sm:text-lg md:text-xl font-normal mb-8 sm:mb-12 max-w-[90%] sm:max-w-xl">{t.subtitle}</p>
+      <p className="text-[#dadbdf] text-sm sm:text-lg md:text-xl font-normal mb-8 sm:mb-8 max-w-[90%] sm:max-w-xl">{t.subtitle}</p>
+
+      <SessionInput sessionId={sessionId} setSessionId={setSessionId} wrapperClassName="w-[80%] sm:w-auto max-w-xs mb-8" inputClassName="px-4 py-2 text-xs sm:text-sm" />
 
       <form onSubmit={handleSubmit} className={s.startForm}>
         <button

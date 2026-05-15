@@ -1,0 +1,5 @@
+{
+  "name": "AI Studio FSD Chat",
+  "description": "A refined AI chat application built with Feature-Sliced Design architecture.",
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

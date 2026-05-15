@@ -1,5 +1,12 @@
+import { Providers } from '@/app/providers';
 import { HomePage } from '@/pages/home/ui/home-page';
 
-export default function App() {
-  return <HomePage />;
-}
+const App = () => {
+  return (
+    <Providers>
+      <HomePage />
+    </Providers>
+  );
+};
+
+export default App;

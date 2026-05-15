@@ -7,10 +7,11 @@ FRONTEND_PORT=5173
 # Установка всех зависимостей (бэкенд и фронтенд)
 install:
 	@echo "Устанавливаем зависимости бэкенда..."
-	cd backend && npm install
+	cd backend && yarn install
 	@echo "Устанавливаем зависимости фронтенда..."
-	cd frontend && npm install
+	cd frontend && yarn install
 
+i: install
 # Кроссплатформенная очистка портов перед запуском
 clean-ports:
 	@echo "Очищаем порты $(BACKEND_PORT) (Backend) и $(FRONTEND_PORT) (Frontend)..."
@@ -24,7 +25,7 @@ dev-backend: clean-ports
 # Запуск только фронтенда (на порту 5173)
 dev-frontend:
 	@echo "Запускаем Frontend..."
-	cd frontend && npm run dev
+	cd frontend && yarn run dev
 
 # Главная команда: убивает зависшие процессы и запускает фронт и бэк параллельно
 dev: clean-ports
@@ -36,4 +37,4 @@ _run-backend:
 	cd backend && node src/app/server.js
 
 _run-frontend:
-	cd frontend && npm run dev
+	cd frontend && yarn run dev

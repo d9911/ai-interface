@@ -1,4 +1,18 @@
-export const translations = {
+export interface Translation {
+  readonly greeting: string
+  readonly question: string
+  readonly subtitle: string
+  readonly placeholder: string
+  readonly assistant: string
+  readonly typing: string
+  readonly disclaimer: string
+  readonly voiceNotSupported: string
+  readonly voiceError: string
+  readonly langSwitch: string
+  readonly noModels: string
+}
+
+export const translations: Record<Language, Translation> = {
   en: {
     greeting: 'Hi there.',
     question: 'What would you like to know?',
@@ -25,7 +39,6 @@ export const translations = {
     langSwitch: 'EN',
     noModels: 'Нет доступных моделей',
   },
-} as const;
+}
 
-export type Language = keyof typeof translations;
-export type Translation = typeof translations['en'];
+export type Language = 'en' | 'ru'

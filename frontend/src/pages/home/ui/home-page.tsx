@@ -1,109 +1,113 @@
-import { useState, useRef, useEffect } from 'react';
-import React from 'react';
-import { ModelSelector } from '@/features/model-selector/ui/model-selector';
-import { LangSwitcher } from '@/features/lang-switcher/ui/lang-switcher';
-import { StartScreen } from '@/widgets/start-screen/ui/start-screen';
-import { ChatLayout } from '@/widgets/chat-layout/ui/chat-layout';
-import { MessageInput } from '@/widgets/message-input/ui/message-input';
-import { translations, Language } from '@/shared/config/i18n';
-import { Message, Model } from '@/entities/message/model/types';
+import { useState, useRef, useEffect } from 'react'
+import React from 'react'
+import { ModelSelector } from '@/features/model-selector/ui/model-selector'
+import { LangSwitcher } from '@/features/lang-switcher/ui/lang-switcher'
+import { StartScreen } from '@/widgets/start-screen/ui/start-screen'
+import { ChatLayout } from '@/widgets/chat-layout/ui/chat-layout'
+import { MessageInput } from '@/widgets/message-input/ui/message-input'
+import { translations, Language } from '@/shared/config/i18n'
+import { Message, Model } from '@/entities/message/model/types'
 
 export const HomePage = () => {
-  const [lang, setLang] = useState<Language>('en');
-  const [isChatStarted, setIsChatStarted] = useState(false);
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [availableModels, setAvailableModels] = useState<Model[]>([]);
-  const [selectedModel, setSelectedModel] = useState('');
+  const [lang, setLang] = useState<Language>('en')
+  const [isChatStarted, setIsChatStarted] = useState(false)
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [isRecording, setIsRecording] = useState(false)
+  const [availableModels, setAvailableModels] = useState<Model[]>([])
+  const [selectedModel, setSelectedModel] = useState('')
 
-  const t = translations[lang];
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const t = translations[lang]
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/models');
-        const data = await res.json();
-        setAvailableModels(data);
+        const res = await fetch('/api/models')
+        const data = await res.json()
+        setAvailableModels(data)
         if (data.length > 0) {
-          setSelectedModel(data[0].id);
+          setSelectedModel(data[0].id)
         }
       } catch (err) {
-        console.error('Ошибка загрузки моделей:', err);
+        console.error('Ошибка загрузки моделей:', err)
       }
-    };
-    fetchModels();
-  }, []);
+    }
+    fetchModels()
+  }, [])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  const recognitionRef = useRef<any>(null);
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  const recognitionRef = useRef<any>(null)
 
-  const toggleLang = () => setLang((prev) => (prev === 'en' ? 'ru' : 'en'));
+  const toggleLang = () => setLang((prev) => (prev === 'en' ? 'ru' : 'en'))
 
   const startRecording = () => {
-    if (!SpeechRecognition) return setError(t.voiceNotSupported);
-    setError('');
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.lang = lang === 'ru' ? 'ru-RU' : 'en-US';
-    recognition.interimResults = false;
+    if (!SpeechRecognition) return setError(t.voiceNotSupported)
+    setError('')
+    const recognition = new SpeechRecognition()
+    recognitionRef.current = recognition
+    recognition.lang = lang === 'ru' ? 'ru-RU' : 'en-US'
+    recognition.interimResults = false
 
-    recognition.onstart = () => setIsRecording(true);
-    recognition.onresult = (e: any) => setInput((prev) => prev + (prev ? ' ' : '') + e.results[0][0].transcript);
+    recognition.onstart = () => setIsRecording(true)
+    recognition.onresult = (e: any) => setInput((prev) => prev + (prev ? ' ' : '') + e.results[0][0].transcript)
     recognition.onerror = () => {
-      setError(t.voiceError);
-      setIsRecording(false);
-    };
-    recognition.onend = () => setIsRecording(false);
-    recognition.start();
-  };
+      setError(t.voiceError)
+      setIsRecording(false)
+    }
+    recognition.onend = () => setIsRecording(false)
+    recognition.start()
+  }
 
-  const stopRecording = () => recognitionRef.current?.stop();
+  const stopRecording = () => recognitionRef.current?.stop()
 
   const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!input.trim() || !selectedModel) return;
+    if (e) e.preventDefault()
+    if (!input.trim() || !selectedModel) return
 
-    if (!isChatStarted) setIsChatStarted(true);
+    if (!isChatStarted) setIsChatStarted(true)
 
-    const newUserMessage: Message = { role: 'user', content: input };
-    setMessages((prev) => [...prev, newUserMessage]);
-    setInput('');
-    setIsLoading(true);
-    setError('');
+    const newUserMessage: Message = { role: 'user', content: input }
+    setMessages((prev) => [...prev, newUserMessage])
+    setInput('')
+    setIsLoading(true)
+    setError('')
 
     try {
-      const res = await fetch('http://localhost:3001/api/chat', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newUserMessage.content, modelId: selectedModel }),
-      });
+        body: JSON.stringify({
+          text: newUserMessage.content,
+          modelId: selectedModel,
+          history: messages, // Send history for context
+        }),
+      })
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Server error');
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Server error')
 
-      setMessages((prev) => [...prev, { role: 'ai', content: data.reply }]);
+      setMessages((prev) => [...prev, { role: 'ai', content: data.reply }])
     } catch (err: any) {
-      setError(err.message);
-      setMessages((prev) => [...prev, { role: 'error', content: err.message }]);
+      setError(err.message)
+      setMessages((prev) => [...prev, { role: 'error', content: err.message }])
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
+      e.preventDefault()
+      handleSubmit()
     }
-  };
+  }
 
   if (!isChatStarted) {
     return (
@@ -113,19 +117,19 @@ export const HomePage = () => {
           <LangSwitcher lang={lang} toggleLang={toggleLang} langSwitchText={t.langSwitch} />
         </div>
 
-        <StartScreen 
-          t={t} 
-          input={input} 
-          setInput={setInput} 
-          handleSubmit={handleSubmit} 
-          isRecording={isRecording} 
-          startRecording={startRecording} 
+        <StartScreen
+          t={t}
+          input={input}
+          setInput={setInput}
+          handleSubmit={handleSubmit}
+          isRecording={isRecording}
+          startRecording={startRecording}
           stopRecording={stopRecording}
           selectedModel={selectedModel}
         />
         {error && <p className="text-[#ff7a17] text-sm mt-4 font-mono uppercase tracking-wider">{error}</p>}
       </div>
-    );
+    )
   }
 
   return (
@@ -141,19 +145,19 @@ export const HomePage = () => {
 
       <ChatLayout messages={messages} isLoading={isLoading} t={t} messagesEndRef={messagesEndRef} />
 
-      <MessageInput 
-        t={t} 
-        input={input} 
-        setInput={setInput} 
-        handleSubmit={handleSubmit} 
-        lang={lang} 
-        startRecording={startRecording} 
-        stopRecording={stopRecording} 
-        isRecording={isRecording} 
-        isLoading={isLoading} 
-        selectedModel={selectedModel} 
-        handleKeyDown={handleKeyDown} 
+      <MessageInput
+        t={t}
+        input={input}
+        setInput={setInput}
+        handleSubmit={handleSubmit}
+        lang={lang}
+        startRecording={startRecording}
+        stopRecording={stopRecording}
+        isRecording={isRecording}
+        isLoading={isLoading}
+        selectedModel={selectedModel}
+        handleKeyDown={handleKeyDown}
       />
     </div>
-  );
-};
+  )
+}
